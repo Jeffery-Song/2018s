@@ -15,7 +15,6 @@ let run filename =
     >>= fun term ->
     Printf.printf "Term: %s\n" (Lang.Term.to_string term);
     let term = Translator.translate term in
-    (* Translator.translate term  *)
     Printf.printf "Translated: %s\n" (IR.Term.to_string term);
     Typechecker.typecheck term
     >>= fun ty ->
@@ -28,7 +27,7 @@ let run filename =
 
 let main () =
   let open Command.Let_syntax in
-  Command.basic
+  Command.basic'
     ~summary:"Lam2 interpreter"
     [%map_open
       let filename = anon ("filename" %: string) in
