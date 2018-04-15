@@ -27,7 +27,45 @@ local function class(parent, child)
   local Class = {}
 
   -- Your code here.
+  -- Class.data = parent.data
+  Class.data = {}
+  table.merge(data, Class.data)
+  table.merge(parent.data, Class.data)
+  Class.methods = {}
+  table.merge(methods, Class.methods)
+  table.merge(parent.methods, Class.methods)
+  Class.metamethods = {}
+  table.merge(metamethods, Class.metamethods)
+  table.merge(parent.metamethods, Class.metamethods)
+  Class.constructor = constructor
+  Class.isinstance = function(cls) 
+    return cls == Class or parent.isinstance(cls)
+  end
+
+  function Class.new(...)
+    local public_inst = {}
+    local private_inst = {}
+
+    public_inst.isinstance = function(self, cls)
+      return Class.isinstance(cls)
+    end
+    private_inst.isinstance = public_inst.isinstance
+
+    table.merge(Class.data, private_inst)
+
+    for k, v in pairs(Class.methods) do
+      public_inst[k] = function(self, ...)
+        return v(private_inst, ...)
+      end
+      private_inst[k] = v
+    end
+
+    setmetatable(public_inst, Class.metamethods)
   
+    constructor(private_inst, ...)
+    return public_inst
+  end
+
   return Class
 end
 

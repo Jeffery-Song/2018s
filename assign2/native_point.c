@@ -15,53 +15,104 @@ typedef struct {
 
 static int point_add(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    point_t* p2 = (point_t*) luaL_checkudata(L, 2, "point_native");
+    point_t* p3 = (point_t*) lua_newuserdata(L, sizeof(point_t));
+    p3->x = p1->x + p2->x;
+    p3->y = p1->y + p2->y;
+    luaL_setmetatable(L, "point_native");
     return 1;
 }
 
 static int point_dist(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    point_t* p2 = (point_t*) luaL_checkudata(L, 2, "point_native");
+    double r = sqrt((p1->x - p2->x) * (p1->x - p2->x) + (p1->y - p2->y) * (p1->y - p2->y));
+    lua_pushnumber(L, r);
+    // luaL_getmetatable(L, "point_native");
+    // lua_setmetatable(L, -2);
+    // luaL_setmetatable(L, "point_native");
     return 1;
 }
 
 static int point_eq(lua_State* L) {
     // Your code here.
     point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    point_t* p2 = (point_t*) luaL_checkudata(L, 2, "point_native");
+    if (p1->x == p2->x && p1->y == p2->y) {
+        lua_pushboolean(L, 1);
+    } else {
+        lua_pushboolean(L, 0);
+    }
+    // luaL_setmetatable(L, "point_native");
     return 1;
 }
 
 
 static int point_sub(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    point_t* p2 = (point_t*) luaL_checkudata(L, 2, "point_native");
+    point_t* p3 = (point_t*) lua_newuserdata(L, sizeof(point_t));
+    p3->x = p1->x - p2->x;
+    p3->y = p1->y - p2->y;
+    luaL_setmetatable(L, "point_native");
     return 1;
 }
 
 static int point_x(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    lua_pushnumber(L, p1->x);
     return 1;
 }
 
 static int point_y(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    lua_pushnumber(L, p1->y);
     return 1;
 }
 
 static int point_setx(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    double x = luaL_checknumber(L, 2);
+    p1->x = x;
     return 0;
 }
 
 static int point_sety(lua_State* L) {
     // Your code here.
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    double y = luaL_checknumber(L, 2);
+    p1->y = y;
     return 0;
 }
 
 static int point_new(lua_State* L) {
     // Your code here.
+    // double* x = luaL_checkint();
+    point_t* t = lua_newuserdata(L, sizeof(point_t));
+    double x = luaL_checknumber(L, 1);
+    double y = luaL_checknumber(L, 2);
+    // double y = (double*) luaL_checkudata(L, 2, "number");
+    t->x = x;
+    t->y = y;
+    // luaL_getmetatable(L, "point_native");
+    // lua_setmetatable(L, -1);
+    luaL_setmetatable(L, "point_native");
     return 1;
 }
 
 static int point_tostring(lua_State* L) {
     // Your code here. 
+    point_t* p1 = (point_t*) luaL_checkudata(L, 1, "point_native");
+    // char* c;
+    // sprintf(c, "??", p1->x, p1->y);
+    lua_pushfstring(L, "{%d, %d}", (int)p1->x, (int)p1->y);
+    // luaL_getmetatable(L, "point_native");
     return 1;
 }
 
@@ -124,5 +175,6 @@ int luaopen_native_point(lua_State* L) {
 
   // Only return one value at the top of the stack, which is the Point class
   // table.
+
   return 1;
 }

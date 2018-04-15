@@ -22,6 +22,18 @@ local Monster = class.class(
 
       Think = function(self)
         -- Your code here.
+        function table_length(t)
+          local count = 0
+	        for _ in pairs(t) do
+		        count = count + 1
+	        end
+          return count
+        end
+        if self:CanSee(self.game:Hero()) then
+          local path = self:PathTo(self.game:Hero())
+          self.game:TryMove(self, path[table_length(path)-1] - self:Pos())
+      
+        end
       end
     }
 })
