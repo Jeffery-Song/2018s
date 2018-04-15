@@ -25,17 +25,111 @@ let rec trystep (t : Term.t) : outcome =
 
   | Term.TUnpack (_, x, t1, t2) -> Step (Term.substitute x t1 t2)
 
-  | Term.App (fn, arg) -> raise Unimplemented
+  | Term.App (fn, arg) -> (
+      match trystep fn with 
+      | Step fnt -> Step (Term.App (fnt, arg))
+      | Val -> (
+          match trystep arg with 
+          | Step argt ->Step (Term.App (fn, argt))
+          | Val -> (
+              match fn with 
+              | Term.Lam (x, typ, trm) -> (
+                  Step (Term.substitute x arg trm)
+                )
+              | _ -> raise (RuntimeError "Unreachable")
+            )
+          | Err s -> Err s
+        )
+      | Err s -> Err s
+    )
 
-  | Term.Binop (b, t1, t2) -> raise Unimplemented
+  | Term.Binop (b, t1, t2) -> (
+      match trystep t1 with 
+      | Step tt1 -> Step (Term.Tuple (tt1, t2))
+      | Val -> (
+          match trystep t2 with 
+          | Step tt2 -> Step (Term.Tuple (t1, tt2))
+          | Val -> (
+              match (t1, t2) with 
+              | (Term.Int i1, Term.Int i2) -> (
+                  match b with 
+                  | Ast.Add -> Step (Term.Int (i1 + i2))
+                  | Ast.Sub -> Step (Term.Int (i1 - i2))
+                  | Ast.Mul -> Step (Term.Int (i1 * i2))
+                  | Ast.Div -> (
+                      if i2 = 0 then Err "div by 0"
+                      else Step (Term.Int (i1 / i2))
+                    )
+                  | _ -> raise (RuntimeError "unrecognized binop")
+                )
+              | _ -> raise (RuntimeError "binop should be used on int")
+            )
+          | Err s -> Err s
+        )
+      | Err s -> Err s
+    )
 
-  | Term.Tuple (t1, t2) -> raise Unimplemented
+  | Term.Tuple (t1, t2) -> (
+      match trystep t1 with
+      | Step tt1 -> (
+          match trystep t2 with
+          | Step tt2 -> Step (Term.Tuple (tt1, tt2))
+          | Val -> Step (Term.Tuple (tt1, t2))
+          | Err s -> Err s
+        )
+      | Val -> (
+          match trystep t2 with
+          | Step tt2 -> Step (Term.Tuple (t1, tt2))
+          | Val -> Val
+          | Err s -> Err s
+        )
+      | Err s -> Err s
+    )
 
-  | Term.Project (t, dir) -> raise Unimplemented
+  | Term.Project (t, dir) -> (
+      match trystep t with
+      | Step tt -> (
+          match tt with 
+          | Term.Tuple (t1, t2) -> (
+              if dir = Ast.Left then (Step t1)
+              else if dir = Ast.Right then (Step t2)
+              else raise (RuntimeError "unrecognized dir")
+            )
+          | _ -> raise (RuntimeError "not a tuple")  
+        )
+      | Val -> (
+          match t with 
+          | Term.Tuple (t1, t2) -> (
+              if dir = Ast.Left then Step t1
+              else if dir = Ast.Right then Step t2
+              else raise (RuntimeError "unrecognized dir")
+            )
+          | _ -> raise (RuntimeError "not a tuple")  
+        )
+      | Err s -> Err s
+    )
 
-  | Term.Inject (t, dir, tau) -> raise Unimplemented
+  | Term.Inject (t, dir, tau) -> (
+      match trystep t with
+      | Val -> Val
+      | Step tt -> Step (Term.Inject (tt, dir, tau))
+      | Err s -> Err s
+    )
 
-  | Term.Case (t, (x1, t1), (x2, t2)) -> raise Unimplemented
+  | Term.Case (t, (x1, t1), (x2, t2)) -> (
+      match trystep t with 
+      | Step tt -> Step (Term.Case (tt, (x1, t1), (x2, t2)))
+      | Val -> (
+          match t with 
+          | Term.Inject (t', dir, tau) -> (
+              if dir = Ast.Left then Step (Term.substitute x1 t' t1)
+              else if dir = Ast.Right then Step (Term.substitute x2 t' t2)
+              else raise (RuntimeError "Unreachable")
+            )
+          | _ -> raise (RuntimeError "Unreachable")
+        )
+      | Err s -> Err s
+    )
 
 let rec eval e =
   match trystep e with
@@ -78,4 +172,4 @@ let inline_tests () =
   let t3 = Term.Binop(Ast.Div, Term.Int 3, Term.Int 0) in
   assert (match trystep t3 with Err _ -> true | _ -> false)
 
-(* let () = inline_tests () *)
+let () = inline_tests ()

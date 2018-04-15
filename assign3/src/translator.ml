@@ -2,6 +2,7 @@ open Core
 open Ast
 
 exception Unimplemented
+exception TranslateError of string
 
 let rec translate_type (t : Lang.Type.t) : IR.Type.t =
   match t with
@@ -45,8 +46,47 @@ let rec translate_term (t : Lang.Term.t) : IR.Term.t =
     IR.Term.Case (t', ("x1", t1'), ("x2", t2'))
 
   | Lang.Term.Let (p, arg, body) ->
+    let rec process_pattern (p' : Lang.Pattern.t) (arg' : Lang.Term.t) (body' : Lang.Term.t) : Lang.Term.t = 
+      match p' with 
+      | Lang.Pattern.Var (name, tp) -> 
+        Lang.Term.App (Lang.Term.Lam (name, tp, body'), arg')
+      | Lang.Pattern.Tuple (p1, p2) -> (
+        match arg' with
+          | Lang.Term.Tuple (t1, t2) ->
+            let t3 = 
+              process_pattern p1 t1 body'
+            in process_pattern p2 t2 t3
+          | Lang.Term.Var s -> (
+
+            let new_body = 
+              process_pattern p1 (Lang.Term.Project (arg, Left)) body'
+            in
+            process_pattern p2 (Lang.Term.Project (arg, Right)) new_body
+          )
+          | _ -> (
+            raise (TranslateError "miss matched pattern")
+          )
+        )
+      | Lang.Pattern.Alias (p1, name, tp) ->
+        let t1 = 
+          Lang.Term.App (Lang.Term.Lam (name, tp, body'), arg')
+        in
+        process_pattern p1 arg t1
+      | Lang.Pattern.Wildcard -> body'
+      | Lang.Pattern.TUnpack (name1, name2) ->
+        Lang.Term.Let (p', arg', body)
+        (* Lang.Pattern.TUnpack (name1, name2) *)
+        
+    in
+    match p with 
+    | Lang.Pattern.Wildcard -> translate_term body
+    | Lang.Pattern.TUnpack (name1, name2) -> IR.Term.TUnpack (name1, name2, translate_term arg, translate_term body)
+    | _ -> translate_term (process_pattern p arg body)
+    (* IR.Term.App(IR.Term.Lam(name, translate_type tp, translate_term body), translate_term arg) *)
     (* Delete the line below and implement the Let case. *)
-    raise Unimplemented
+    (* raise Unimplemented *)
+
+
 
 let translate t = translate_term t
 
