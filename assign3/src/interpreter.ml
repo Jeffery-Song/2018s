@@ -45,10 +45,10 @@ let rec trystep (t : Term.t) : outcome =
 
   | Term.Binop (b, t1, t2) -> (
       match trystep t1 with 
-      | Step tt1 -> Step (Term.Tuple (tt1, t2))
+      | Step tt1 -> Step (Term.Binop (b, tt1, t2))
       | Val -> (
           match trystep t2 with 
-          | Step tt2 -> Step (Term.Tuple (t1, tt2))
+          | Step tt2 -> Step (Term.Binop (b, t1, tt2))
           | Val -> (
               match (t1, t2) with 
               | (Term.Int i1, Term.Int i2) -> (
